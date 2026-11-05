@@ -1,0 +1,21 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Secretos: nunca subir
+.env
+*.env.local
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.iml
+.idea/
+.vscode/
+
+# SO
+.DS_Store
+Thumbs.db
