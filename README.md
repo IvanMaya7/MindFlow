@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # MindFlow
 
 App de seguimiento emocional y apoyo psicológico.
@@ -68,3 +69,6 @@ El esquema ya guarda `risk_level` por entrada, pero **no** hay envío automátic
 Antes de implementarlo conviene decidir con calma: consentimiento explícito del usuario y del
 contacto, confirmación del usuario antes de avisar (como describe tu flujo), manejo de falsos
 positivos y revisión legal (datos de salud mental son datos sensibles).
+=======
+# MindFlow
+>>>>>>> 37aeac537062c702d1c41e841f79728eb916f052
