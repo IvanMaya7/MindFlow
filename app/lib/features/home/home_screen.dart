@@ -11,7 +11,7 @@ class HomeScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Hola 👋', style: text.headlineMedium),
+          Text('Hola ', style: text.headlineMedium),
           const SizedBox(height: 16),
           const Card(
             child: Padding(
