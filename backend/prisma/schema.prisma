@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String   @unique
+  passwordHash    String   @map("password_hash")
+  displayName     String   @map("display_name")
+  allowAiAnalysis Boolean  @default(false) @map("allow_ai_analysis")
+  theme           String   @default("system")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  emergencyContacts EmergencyContact[]
+  journalEntries    JournalEntry[]
+  aiInsights        AiInsight[]
+
+  @@map("users")
+}
+
+model EmergencyContact {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  phone     String?
+  email     String?
+  relation  String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_contacts_user")
+  @@map("emergency_contacts")
+}
+
+model JournalEntry {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  entryDate         DateTime @default(now()) @map("entry_date") @db.Timestamptz(6)
+  primaryEmotion    String   @map("primary_emotion")
+  emotionIntensity  Int?     @map("emotion_intensity") @db.SmallInt
+  energyLevel       Int?     @map("energy_level") @db.SmallInt
+  stressLevel       Int?     @map("stress_level") @db.SmallInt
+  sleepQuality      Int?     @map("sleep_quality") @db.SmallInt
+  textNotes         String?  @map("text_notes")
+  tags              String[] @default([])
+  sentimentScore    Float?   @map("sentiment_score") @db.Real
+  riskLevel         String?  @map("risk_level")
+  extractedKeywords String[] @default([]) @map("extracted_keywords")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, entryDate], map: "idx_journal_user_date")
+  @@map("journal_entries")
+}
+
+model AiInsight {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  periodStart DateTime @map("period_start") @db.Timestamptz(6)
+  periodEnd   DateTime @map("period_end") @db.Timestamptz(6)
+  insightText String   @map("insight_text")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, periodEnd], map: "idx_insights_user")
+  @@map("ai_insights")
+}
+
+model Resource {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  content   String
+  category  String
+  imageUrl  String?  @map("image_url")
+  isPremium Boolean  @default(false) @map("is_premium")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([category], map: "idx_resources_category")
+  @@map("resources")
+}
