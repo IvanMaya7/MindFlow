@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const AppError = require('../utils/AppError');
-const { jwtSecret, jwtExpiresIn } = require('../config/env');
+const { jwtSecret, jwtExpiresIn } = require('../config/config');
 
 const SALT_ROUNDS = 12;
 
