@@ -28,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _relation;
   bool _checkingEmail = false;
   String? _takenEmail;
+  bool _relationError = false;
 
   static const _relations = ['Familiar', 'Pareja', 'Terapeuta', 'Amigo íntimo'];
   static const _sosColor = Color(0xFFC4694D);
@@ -75,7 +76,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_contactFormKey.currentState!.validate()) return;
+    final formOk = _contactFormKey.currentState!.validate();
+    final relationOk = _relation != null;
+    setState(() => _relationError = !relationOk);
+    if (!formOk || !relationOk) return;
+
     FocusScope.of(context).unfocus();
     final auth = context.read<AuthProvider>();
 
@@ -86,7 +91,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       allowAiAnalysis: _aiConsent,
       contactName: _contactNameCtrl.text.trim(),
       contactPhone: _contactPhoneCtrl.text.trim(),
-      contactRelation: _relation,
+      contactRelation: _relation!,
     );
 
     if (!mounted) return;
@@ -98,7 +103,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() => _step = 0);
     }
   }
-
   // ---------------- Estilos reutilizables ----------------
 
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
@@ -296,7 +300,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M}' .\-]", unicode: true),
+                        RegExp(r"[\p{L}\p{M}' .]", unicode: true),
                       ),
                     ],
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
@@ -458,6 +462,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ---------------- Paso 3: contacto de confianza ----------------
+  // ---------------- Paso 3: contacto de confianza ----------------
   Widget _stepContact(AuthProvider auth) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
@@ -513,27 +518,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 _labeled(
                   'Parentesco o vínculo',
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _relations.map((r) {
-                      final selected = _relation == r;
-                      return ChoiceChip(
-                        label: Text(r),
-                        selected: selected,
-                        showCheckmark: false,
-                        shape: const StadiumBorder(),
-                        side: BorderSide.none,
-                        backgroundColor: _fieldFill,
-                        selectedColor: primary,
-                        labelStyle: TextStyle(
-                          color: selected ? onPrimary : theme.colorScheme.onSurface,
-                          fontWeight: FontWeight.w600,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _relations.map((r) {
+                          final selected = _relation == r;
+                          return ChoiceChip(
+                            label: Text(r),
+                            selected: selected,
+                            showCheckmark: false,
+                            shape: const StadiumBorder(),
+                            side: _relationError && !selected
+                                ? BorderSide(color: theme.colorScheme.error)
+                                : BorderSide.none,
+                            backgroundColor: _fieldFill,
+                            selectedColor: primary,
+                            labelStyle: TextStyle(
+                              color: selected ? onPrimary : theme.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            onSelected: (_) => setState(() {
+                              _relation = r;
+                              _relationError = false;
+                            }),
+                          );
+                        }).toList(),
+                      ),
+                      if (_relationError)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, left: 4),
+                          child: Text(
+                            'Elige el parentesco o vínculo',
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                        onSelected: (s) =>
-                            setState(() => _relation = s ? r : null),
-                      );
-                    }).toList(),
+                    ],
                   ),
                 ),
               ],

@@ -43,7 +43,7 @@ class AuthProvider extends ChangeNotifier {
     required bool allowAiAnalysis,
     required String contactName,
     required String contactPhone,
-    String? contactRelation,
+    required String contactRelation,
   }) {
     return _run(() => _service.register(
           email: email,

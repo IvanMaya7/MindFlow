@@ -69,7 +69,7 @@ class AuthService {
     required bool allowAiAnalysis,
     required String contactName,
     required String contactPhone,
-    String? contactRelation,
+    required String contactRelation,
   }) async {
     final data = await _send(() => http.post(
           Uri.parse('$_base/register'),
@@ -82,7 +82,7 @@ class AuthService {
             'emergencyContact': {
               'name': contactName,
               'phone': contactPhone,
-              'relation': ?contactRelation,
+              'relation': contactRelation,
             },
           }),
         ));
