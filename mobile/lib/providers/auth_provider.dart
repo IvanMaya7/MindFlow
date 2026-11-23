@@ -86,4 +86,16 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+    /// true = libre, false = ya existe, null = no se pudo comprobar (error de red).
+  Future<bool?> isEmailAvailable(String email) async {
+    error = null;
+    try {
+      return await _service.isEmailAvailable(email);
+    } on ApiException catch (e) {
+      error = e.message;
+      notifyListeners();
+      return null;
+    }
+  }
 }

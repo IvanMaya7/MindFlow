@@ -1,13 +1,17 @@
 import 'package:flutter/foundation.dart';
 
 class ApiConfig {
-  // Cambia esto por la URL de tu backend desplegado en AWS.
-  static const String _prod = 'https://mindflow.c7e64ss8uk7z.us-east-2.rds.amazonaws.com';
+  // Backend desplegado en AWS (CloudFront -> EC2). No es la dirección de RDS.
+  static const String _prod = 'https://d2ml1g66um87p2.cloudfront.net';
 
-  // IP de tu PC en la red local (ipconfig -> IPv4). Cambia si tu router te da otra.
+  // En desarrollo: con adb reverse, localhost apunta a tu PC por el cable.
   static const String _devHost = 'localhost';
 
+  // Permite elegir la URL al ejecutar: --dart-define=API_URL=https://...
+  static const String _override = String.fromEnvironment('API_URL');
+
   static String get baseUrl {
+    if (_override.isNotEmpty) return _override;
     if (kReleaseMode) return _prod;
     return 'http://$_devHost:4001';
   }

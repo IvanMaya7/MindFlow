@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../core/validators.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -24,6 +25,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _aiConsent = false;
   bool _acceptedTerms = false;
   String? _relation;
+  bool _checkingEmail = false;
+  String? _takenEmail;
 
   static const _relations = ['Familiar', 'Pareja', 'Terapeuta', 'Amigo íntimo'];
   static const _sosColor = Color(0xFFC4694D);
@@ -46,11 +49,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _step = step);
   }
 
-  void _next() {
+    Future<void> _next() async {
     if (_step == 0) {
       if (!_accountFormKey.currentState!.validate()) return;
+      FocusScope.of(context).unfocus();
+      final auth = context.read<AuthProvider>();
+      final email = _emailCtrl.text.trim().toLowerCase();
+
+      setState(() => _checkingEmail = true);
+      final available = await auth.isEmailAvailable(email);
+      if (!mounted) return;
+      setState(() => _checkingEmail = false);
+
+      if (available == null) return; // error de red: auth.error ya se muestra abajo
+      if (!available) {
+        setState(() => _takenEmail = email);
+        _accountFormKey.currentState!.validate(); // muestra el error en el campo
+        return;
+      }
       _goTo(1);
-        } else if (_step == 1) {
+    } else if (_step == 1) {
       _goTo(2);
     }
   }
@@ -253,7 +271,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ---------------- Paso 1: datos de cuenta ----------------
 
-  Widget _stepAccount() {
+    Widget _stepAccount() {
     final theme = Theme.of(context);
     return Column(
       children: [
@@ -276,8 +294,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _nameCtrl,
                     textCapitalization: TextCapitalization.words,
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
-                    validator: (v) =>
-                        (v?.trim().length ?? 0) < 2 ? 'Ingresa tu nombre' : null,
+                    validator: (v) => Validators.name(v),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -287,11 +304,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _emailCtrl,
                     keyboardType: TextInputType.emailAddress,
                     decoration: _dec('sofia@ejemplo.com', Icons.mail_outline),
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
                     validator: (v) {
-                      final value = v?.trim() ?? '';
-                      if (value.isEmpty) return 'Ingresa tu correo';
-                      if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value)) {
-                        return 'Correo inválido';
+                      final base = Validators.email(v);
+                      if (base != null) return base;
+                      if (v!.trim().toLowerCase() == _takenEmail) {
+                        return 'Este correo ya tiene una cuenta. Inicia sesión.';
                       }
                       return null;
                     },
@@ -304,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _passCtrl,
                     obscureText: _obscure,
                     decoration: _dec(
-                      'Mínimo 8 caracteres',
+                      'Mínimo 8, con letras y números',
                       Icons.lock_outline,
                       suffix: IconButton(
                         icon: Icon(_obscure
@@ -313,11 +331,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
-                    validator: (v) => (v == null || v.length < 8)
-                        ? 'Debe tener al menos 8 caracteres'
-                        : null,
+                    validator: (v) => Validators.newPassword(v),
                   ),
-                  trailing: 'Mín. 8 caracteres',
+                  trailing: 'Letras y números',
                 ),
                 const SizedBox(height: 22),
                 Row(
@@ -348,11 +364,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        _primaryButton('Continuar', _next),
+        _primaryButton('Continuar', _next, loading: _checkingEmail),
       ],
     );
   }
-
   // ---------------- Paso 2: consentimiento de IA ----------------
 
   Widget _stepConsent() {
@@ -437,7 +452,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ---------------- Paso 3: contacto de confianza ----------------
-
   Widget _stepContact(AuthProvider auth) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
@@ -472,9 +486,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _contactNameCtrl,
                     textCapitalization: TextCapitalization.words,
                     decoration: _dec('Ej. Carmen R. (Mamá)', Icons.person_outline),
-                    validator: (v) => (v?.trim().length ?? 0) < 2
-                        ? 'Ingresa el nombre del contacto'
-                        : null,
+                    validator: (v) =>
+                        Validators.name(v, empty: 'Ingresa el nombre del contacto'),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -484,13 +497,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _contactPhoneCtrl,
                     keyboardType: TextInputType.phone,
                     decoration: _dec('+52 55 1234 5678', Icons.phone_outlined),
-                    validator: (v) {
-                      final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
-                      if (digits.length < 10 || digits.length > 15) {
-                        return 'Ingresa un número válido (mínimo 10 dígitos)';
-                      }
-                      return null;
-                    },
+                    validator: (v) => Validators.phone(v),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -572,7 +579,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
     );
   }
-
+  
   // ---------------- Pantalla ----------------
 
   @override

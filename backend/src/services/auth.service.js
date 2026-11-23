@@ -61,4 +61,14 @@ const getProfile = async (userId) => {
   return sanitizeUser(user);
 };
 
-module.exports = { register, login, getProfile };
+const emailExists = async (email) => {
+  const user = await prisma.user.findUnique({
+    where: { email: email.toLowerCase().trim() },
+    select: { id: true },
+  });
+  return Boolean(user);
+};
+
+module.exports = { register, login, getProfile, emailExists };
+
+module.exports = { register, login, getProfile, emailExists };

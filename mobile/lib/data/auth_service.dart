@@ -111,4 +111,14 @@ class AuthService {
         ));
     return AppUser.fromJson(data['user'] as Map<String, dynamic>);
   }
+
+    /// true si el correo está libre, false si ya tiene cuenta.
+  Future<bool> isEmailAvailable(String email) async {
+    final data = await _send(() => http.post(
+          Uri.parse('$_base/check-email'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        ));
+    return data['available'] as bool;
+  }
 }
