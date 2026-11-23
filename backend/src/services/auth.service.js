@@ -70,5 +70,3 @@ const emailExists = async (email) => {
 };
 
 module.exports = { register, login, getProfile, emailExists };
-
-module.exports = { register, login, getProfile, emailExists };

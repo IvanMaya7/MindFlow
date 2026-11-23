@@ -1,6 +1,10 @@
 const { z } = require('zod');
 const authService = require('../services/auth.service');
 
+const nameChars = /^[\p{L}\p{M}' .-]+$/u;
+const contactNameChars = /^[\p{L}\p{M}' .()-]+$/u;
+const hasTwoLetters = (v) => (v.match(/\p{L}/gu) || []).length >= 2;
+
 const emailField = z
   .string({ required_error: 'El correo es obligatorio' })
   .trim()
@@ -18,7 +22,14 @@ const passwordRule = z
 const registerSchema = z.object({
   email: emailField,
   password: passwordRule,
-  displayName: z.string().trim().min(2, 'El nombre es muy corto').max(60, 'El nombre es muy largo'),
+    displayName: z
+    .string({ required_error: 'El nombre es obligatorio' })
+    .trim()
+    .min(2, 'El nombre es muy corto')
+    .max(60, 'El nombre es muy largo')
+    .regex(nameChars, 'El nombre solo puede tener letras y espacios')
+    .refine(hasTwoLetters, 'El nombre debe tener al menos 2 letras')
+    .transform((v) => v.replace(/\s+/g, ' ')),
   allowAiAnalysis: z.boolean().optional().default(false),
   emergencyContact: z.object({
     name: z.string().trim().min(2, 'El nombre del contacto es muy corto').max(80),

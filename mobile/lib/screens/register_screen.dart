@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../core/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../core/validators.dart';
+import 'package:flutter/services.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -293,6 +294,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _nameCtrl,
                     textCapitalization: TextCapitalization.words,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r"[\p{L}\p{M}' .\-]", unicode: true),
+                      ),
+                    ],
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
                     validator: (v) => Validators.name(v),
                   ),
@@ -485,9 +491,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _contactNameCtrl,
                     textCapitalization: TextCapitalization.words,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r"[\p{L}\p{M}' .()\-]", unicode: true),
+                      ),
+                    ],
                     decoration: _dec('Ej. Carmen R. (Mamá)', Icons.person_outline),
-                    validator: (v) =>
-                        Validators.name(v, empty: 'Ingresa el nombre del contacto'),
+                    validator: (v) => Validators.contactName(v),
                   ),
                 ),
                 const SizedBox(height: 16),

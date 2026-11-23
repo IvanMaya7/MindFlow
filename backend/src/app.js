@@ -15,6 +15,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.set('trust proxy', 1);
+
 app.get('/health', (req, res) => res.json({ status: 'ok', service: 'auth-service' }));
 app.use('/api/auth', authRoutes);
 
