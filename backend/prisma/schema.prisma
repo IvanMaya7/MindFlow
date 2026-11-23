@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -85,4 +86,17 @@ model Resource {
 
   @@index([category], map: "idx_resources_category")
   @@map("resources")
+}
+
+model PasswordReset {
+  id        Int       @id @default(autoincrement())
+  email     String
+  codeHash  String    @map("code_hash")
+  expiresAt DateTime  @map("expires_at")
+  attempts  Int       @default(0)
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([email])
+  @@map("password_resets")
 }
