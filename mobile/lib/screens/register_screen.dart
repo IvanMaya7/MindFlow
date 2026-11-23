@@ -300,7 +300,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M}' .]", unicode: true),
+                        RegExp(r"[\p{L}\p{M} .]", unicode: true),
                       ),
                     ],
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
@@ -498,7 +498,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M}' .()\-]", unicode: true),
+                        RegExp(r"[\p{L}\p{M} .]", unicode: true),
                       ),
                     ],
                     decoration: _dec('Ej. Carmen R. (Mamá)', Icons.person_outline),
