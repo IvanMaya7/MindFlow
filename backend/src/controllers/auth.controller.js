@@ -1,8 +1,8 @@
 const { z } = require("zod");
 const authService = require("../services/auth.service");
 
-const nameChars = /^[\p{L}\p{M}' .-]+$/u;
-const contactNameChars = /^[\p{L}\p{M}' .()-]+$/u;
+const nameChars = /^[\p{L}\p{M}]+$/u;
+const contactNameChars = /^[\p{L}\p{M}]+$/u;
 const hasTwoLetters = (v) => (v.match(/\p{L}/gu) || []).length >= 2;
 
 const emailField = z
@@ -55,10 +55,10 @@ const registerSchema = z.object({
         "El teléfono debe tener al menos 10 dígitos",
       ),
     relation: z
-      .string({ required_error: 'El parentesco es obligatorio' })
+      .string({ required_error: "El parentesco es obligatorio" })
       .trim()
-      .min(1, 'El parentesco es obligatorio')
-      .max(40, 'El parentesco es muy largo'),
+      .min(1, "El parentesco es obligatorio")
+      .max(40, "El parentesco es muy largo"),
   }),
 });
 
@@ -71,6 +71,17 @@ const loginSchema = z.object({
 });
 
 const checkEmailSchema = z.object({ email: emailField });
+
+const forgotSchema = z.object({ email: emailField });
+
+const resetSchema = z.object({
+  email: emailField,
+  code: z
+    .string({ required_error: "Ingresa el código" })
+    .trim()
+    .regex(/^\d{6}$/, "El código tiene 6 dígitos"),
+  newPassword: passwordRule,
+});
 
 const checkEmail = async (req, res, next) => {
   try {
@@ -111,4 +122,31 @@ const me = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, me, checkEmail };
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = forgotSchema.parse(req.body);
+    await authService.requestPasswordReset(email);
+    res.json({ message: "Si el correo está registrado, te enviamos un código." });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const data = resetSchema.parse(req.body);
+    await authService.resetPassword(data);
+    res.json({ message: "Contraseña actualizada. Ya puedes iniciar sesión." });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  me,
+  checkEmail,
+  forgotPassword,
+  resetPassword,
+};

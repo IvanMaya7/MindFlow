@@ -300,7 +300,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M} .]", unicode: true),
+                        RegExp(r"[\p{L}\p{M}]", unicode: true),
                       ),
                     ],
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
@@ -462,7 +462,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // ---------------- Paso 3: contacto de confianza ----------------
-  // ---------------- Paso 3: contacto de confianza ----------------
   Widget _stepContact(AuthProvider auth) {
     final theme = Theme.of(context);
     final primary = theme.colorScheme.primary;
@@ -498,7 +497,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M} .]", unicode: true),
+                        RegExp(r"[\p{L}\p{M}]", unicode: true),
                       ),
                     ],
                     decoration: _dec('Ej. Carmen R. (Mamá)', Icons.person_outline),
