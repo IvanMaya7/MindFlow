@@ -295,7 +295,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _nameCtrl,
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
+                      FilteringTextInputFormatter.deny(
                         RegExp(r"[\p{L}\p{M}' .\-]", unicode: true),
                       ),
                     ],
@@ -492,7 +492,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _contactNameCtrl,
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(
+                      FilteringTextInputFormatter.deny(
                         RegExp(r"[\p{L}\p{M}' .()\-]", unicode: true),
                       ),
                     ],
