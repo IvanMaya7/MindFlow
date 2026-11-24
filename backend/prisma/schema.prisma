@@ -51,6 +51,7 @@ model JournalEntry {
   sleepQuality      Int?     @map("sleep_quality") @db.SmallInt
   textNotes         String?  @map("text_notes")
   tags              String[] @default([])
+  bodySensations    String[] @default([]) @map("body_sensations")
   sentimentScore    Float?   @map("sentiment_score") @db.Real
   riskLevel         String?  @map("risk_level")
   extractedKeywords String[] @default([]) @map("extracted_keywords")

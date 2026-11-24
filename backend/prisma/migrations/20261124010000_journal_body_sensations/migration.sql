@@ -1,0 +1,1 @@
+ALTER TABLE "journal_entries" ADD COLUMN "body_sensations" TEXT[] DEFAULT ARRAY[]::TEXT[];
