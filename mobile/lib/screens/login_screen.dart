@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../core/app_theme.dart';
 import '../providers/auth_provider.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
+import 'package:flutter/services.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,6 +36,13 @@ class _LoginScreenState extends State<LoginScreen> {
     context.read<AuthProvider>().clearError();
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const RegisterScreen()),
+    );
+  }
+
+  void _goToForgotPassword() {
+    context.read<AuthProvider>().clearError();
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
     );
   }
 
@@ -251,6 +260,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               autofillHints: const [AutofillHints.email],
                               decoration:
                                   _dec('sofia@ejemplo.com', Icons.mail_outline),
+                              inputFormatters: [
+                                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                              ],                                   
                               validator: (v) {
                                 final value = v?.trim() ?? '';
                                 if (value.isEmpty) return 'Ingresa tu correo';
@@ -264,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 16),
                           _labeled(
-                            'Contraseña maestra',
+                            'Contraseña',
                             TextFormField(
                               controller: _passCtrl,
                               obscureText: _obscure,
@@ -287,7 +299,19 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             trailing: 'Mín. 8 caracteres',
                           ),
-                          const SizedBox(height: 22),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: auth.isLoading ? null : _goToForgotPassword,
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                minimumSize: const Size(0, 36),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text('¿Olvidaste tu contraseña?'),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
                           Row(
                             children: [
                               const Expanded(child: Divider()),

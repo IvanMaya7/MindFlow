@@ -65,6 +65,7 @@ class AuthService {
   Future<AuthResult> register({
     required String email,
     required String password,
+    required String phone,
     required String displayName,
     required bool allowAiAnalysis,
     required String contactName,
@@ -77,6 +78,7 @@ class AuthService {
           body: jsonEncode({
             'email': email,
             'password': password,
+            'phone': phone,
             'displayName': displayName,
             'allowAiAnalysis': allowAiAnalysis,
             'emergencyContact': {
@@ -120,5 +122,31 @@ class AuthService {
           body: jsonEncode({'email': email}),
         ));
     return data['available'] as bool;
+  }
+
+    /// Pide el código por correo. El servidor responde igual exista o no la cuenta.
+  Future<void> requestPasswordReset(String email) async {
+    await _send(() => http.post(
+          Uri.parse('$_base/forgot-password'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        ));
+  }
+
+  /// Valida el código y guarda la contraseña nueva.
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _send(() => http.post(
+          Uri.parse('$_base/reset-password'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'code': code,
+            'newPassword': newPassword,
+          }),
+        ));
   }
 }

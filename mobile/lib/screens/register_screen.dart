@@ -4,6 +4,8 @@ import '../core/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../core/validators.dart';
 import 'package:flutter/services.dart';
+import '../core/formatters.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,6 +22,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passCtrl = TextEditingController();
   final _contactNameCtrl = TextEditingController();
   final _contactPhoneCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   int _step = 0; // 0 = cuenta, 1 = consentimiento IA, 2 = contacto
   bool _obscure = true;
@@ -40,6 +44,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passCtrl.dispose();
     _contactNameCtrl.dispose();
     _contactPhoneCtrl.dispose();
+    _phoneCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
@@ -88,6 +94,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       displayName: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       password: _passCtrl.text,
+      phone: _phoneCtrl.text.trim(),
       allowAiAnalysis: _aiConsent,
       contactName: _contactNameCtrl.text.trim(),
       contactPhone: _contactPhoneCtrl.text.trim(),
@@ -300,8 +307,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M}]", unicode: true),
+                        RegExp(r"[\p{L}\p{M} ]", unicode: true),
                       ),
+                      SingleSpaceFormatter(),
                     ],
                     decoration: _dec('Ej. Sofía Morales', Icons.badge_outlined),
                     validator: (v) => Validators.name(v),
@@ -315,6 +323,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     keyboardType: TextInputType.emailAddress,
                     decoration: _dec('sofia@ejemplo.com', Icons.mail_outline),
                     autovalidateMode: AutovalidateMode.onUserInteraction,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                    ],
                     validator: (v) {
                       final base = Validators.email(v);
                       if (base != null) return base;
@@ -327,7 +338,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 _labeled(
-                  'Contraseña maestra',
+                  'Número de teléfono',
+                  TextFormField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s()\-]')),
+                      LengthLimitingTextInputFormatter(20),
+                      SingleSpaceFormatter(),
+                    ],
+                    decoration: _dec('+52 55 1234 5678', Icons.phone_outlined),
+                    validator: Validators.phone,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _labeled(
+                  'Contraseña',
                   TextFormField(
                     controller: _passCtrl,
                     obscureText: _obscure,
@@ -341,9 +367,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         onPressed: () => setState(() => _obscure = !_obscure),
                       ),
                     ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                    ],
                     validator: (v) => Validators.newPassword(v),
                   ),
                   trailing: 'Letras y números',
+                ),
+                const SizedBox(height: 16),
+                _labeled(
+                  'Confirmar contraseña',
+                  TextFormField(
+                    controller: _confirmCtrl,
+                    obscureText: _obscure,
+                    autovalidateMode: AutovalidateMode.onUserInteraction,
+                    decoration: _dec('Repite tu contraseña', Icons.lock_outline),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return 'Confirma tu contraseña';
+                      if (v != _passCtrl.text) return 'Las contraseñas no coinciden';
+                      return null;
+                    },
+                  ),
                 ),
                 const SizedBox(height: 22),
                 Row(
@@ -497,8 +541,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textCapitalization: TextCapitalization.words,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                        RegExp(r"[\p{L}\p{M}]", unicode: true),
+                        RegExp(r"[\p{L}\p{M} ]", unicode: true),
                       ),
+                      SingleSpaceFormatter(),
                     ],
                     decoration: _dec('Ej. Carmen R. (Mamá)', Icons.person_outline),
                     validator: (v) => Validators.contactName(v),
@@ -511,7 +556,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _contactPhoneCtrl,
                     keyboardType: TextInputType.phone,
                     decoration: _dec('+52 55 1234 5678', Icons.phone_outlined),
-                    validator: (v) => Validators.phone(v),
+                    validator: (v) => Validators.contactPhone(v, ownPhone: _phoneCtrl.text),
                   ),
                 ),
                 const SizedBox(height: 16),

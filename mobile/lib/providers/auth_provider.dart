@@ -40,6 +40,7 @@ class AuthProvider extends ChangeNotifier {
     required String displayName,
     required String email,
     required String password,
+    required String phone,
     required bool allowAiAnalysis,
     required String contactName,
     required String contactPhone,
@@ -48,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
     return _run(() => _service.register(
           email: email,
           password: password,
+          phone: phone,
           displayName: displayName,
           allowAiAnalysis: allowAiAnalysis,
           contactName: contactName,
@@ -96,6 +98,39 @@ class AuthProvider extends ChangeNotifier {
       error = e.message;
       notifyListeners();
       return null;
+    }
+  }
+
+    Future<bool> requestPasswordReset(String email) {
+    return _runSimple(() => _service.requestPasswordReset(email));
+  }
+
+  Future<bool> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) {
+    return _runSimple(() => _service.resetPassword(
+          email: email,
+          code: code,
+          newPassword: newPassword,
+        ));
+  }
+
+  /// Como _run, pero para acciones que no inician sesión.
+  Future<bool> _runSimple(Future<void> Function() action) async {
+    isLoading = true;
+    error = null;
+    notifyListeners();
+    try {
+      await action();
+      return true;
+    } on ApiException catch (e) {
+      error = e.message;
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 }

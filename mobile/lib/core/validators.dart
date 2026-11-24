@@ -56,4 +56,19 @@ class Validators {
     }
     return null;
   }
+
+    static String _digits(String s) {
+    final d = s.replaceAll(RegExp(r'\D'), '');
+    return d.length > 10 ? d.substring(d.length - 10) : d;
+  }
+
+  /// Teléfono del contacto: válido y distinto al del usuario.
+  static String? contactPhone(String? v, {required String ownPhone}) {
+    final base = phone(v);
+    if (base != null) return base;
+    if (_digits(v!) == _digits(ownPhone)) {
+      return 'Debe ser distinto a tu número de teléfono';
+    }
+    return null;
+  }
 }

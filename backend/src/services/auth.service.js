@@ -33,7 +33,7 @@ const sanitizeUser = (user) => ({
 const signToken = (userId) =>
   jwt.sign({ sub: userId }, jwtSecret, { expiresIn: jwtExpiresIn });
 
-const register = async ({ email, password, displayName, allowAiAnalysis, emergencyContact }) => {
+const register = async ({ email, password, phone, displayName, allowAiAnalysis, emergencyContact }) => {
   const normalizedEmail = email.toLowerCase().trim();
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
@@ -46,6 +46,7 @@ const register = async ({ email, password, displayName, allowAiAnalysis, emergen
       email: normalizedEmail,
       passwordHash,
       displayName: displayName.trim(),
+      phone: phone.trim(),
       allowAiAnalysis,
       emergencyContacts: {
         create: {

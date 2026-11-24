@@ -5,6 +5,22 @@ const nameChars = /^[\p{L}\p{M}]+$/u;
 const contactNameChars = /^[\p{L}\p{M}]+$/u;
 const hasTwoLetters = (v) => (v.match(/\p{L}/gu) || []).length >= 2;
 
+// Compara teléfonos por sus últimos 10 dígitos (ignora +52, espacios y guiones)
+const normalizePhone = (v) => {
+  const digits = v.replace(/\D/g, "");
+  return digits.length > 10 ? digits.slice(-10) : digits;
+};
+
+const phoneField = (label) =>
+  z
+    .string({ required_error: `${label} es obligatorio` })
+    .trim()
+    .regex(/^[+0-9\s()-]{7,20}$/, `${label} no es válido`)
+    .refine(
+      (v) => v.replace(/\D/g, "").length >= 10,
+      `${label} debe tener al menos 10 dígitos`,
+    );
+
 const emailField = z
   .string({ required_error: "El correo es obligatorio" })
   .trim()
@@ -22,6 +38,7 @@ const passwordRule = z
 const registerSchema = z.object({
   email: emailField,
   password: passwordRule,
+  phone: phoneField("El teléfono"),
   displayName: z
     .string({ required_error: "El nombre es obligatorio" })
     .trim()
@@ -46,14 +63,7 @@ const registerSchema = z.object({
         "El nombre del contacto debe tener al menos 2 letras",
       )
       .transform((v) => v.replace(/\s+/g, " ")),
-    phone: z
-      .string()
-      .trim()
-      .regex(/^[+0-9\s()-]{7,20}$/, "El teléfono del contacto no es válido")
-      .refine(
-        (v) => v.replace(/\D/g, "").length >= 10,
-        "El teléfono debe tener al menos 10 dígitos",
-      ),
+    phone: phoneField("El teléfono del contacto"),
     relation: z
       .string({ required_error: "El parentesco es obligatorio" })
       .trim()
