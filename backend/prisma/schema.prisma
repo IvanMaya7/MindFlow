@@ -12,6 +12,7 @@ model User {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email           String   @unique
   passwordHash    String   @map("password_hash")
+  phone           String?
   displayName     String   @map("display_name")
   allowAiAnalysis Boolean  @default(false) @map("allow_ai_analysis")
   theme           String   @default("system")
