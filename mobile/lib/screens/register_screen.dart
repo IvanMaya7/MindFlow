@@ -340,15 +340,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _labeled(
                   'Número de teléfono',
                   TextFormField(
-                    controller: _phoneCtrl,
+                    controller: _phoneCtrl, // en el contacto: _contactPhoneCtrl
                     keyboardType: TextInputType.phone,
                     inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9+\s()\-]')),
-                      LengthLimitingTextInputFormatter(20),
-                      SingleSpaceFormatter(),
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
                     ],
-                    decoration: _dec('+52 55 1234 5678', Icons.phone_outlined),
-                    validator: Validators.phone,
+                    decoration: _dec('10 dígitos, ej. 5512345678', Icons.phone_outlined),
+                    validator: Validators.phone, // en el contacto: tu validator con contactPhone
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -555,7 +554,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _contactPhoneCtrl,
                     keyboardType: TextInputType.phone,
-                    decoration: _dec('+52 55 1234 5678', Icons.phone_outlined),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(10),
+                    ],
+                    decoration: _dec('10 dígitos, ej. 5512345678', Icons.phone_outlined),
                     validator: (v) => Validators.contactPhone(v, ownPhone: _phoneCtrl.text),
                   ),
                 ),

@@ -50,9 +50,10 @@ class Validators {
   }
 
   static String? phone(String? v) {
-    final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 10 || digits.length > 15) {
-      return 'Ingresa un número válido (mínimo 10 dígitos)';
+    final value = v?.trim() ?? '';
+    if (value.isEmpty) return 'Ingresa tu número de teléfono';
+    if (!RegExp(r'^\d{10}$').hasMatch(value)) {
+      return 'El teléfono debe tener exactamente 10 dígitos';
     }
     return null;
   }
