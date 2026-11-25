@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../data/auth_service.dart' show ApiException;
+import '../data/journal_service.dart';
+import '../data/journal_entry.dart';
+import 'diary_screen.dart';
 
 // Paleta de la pantalla de inicio (tomada del diseño en Figma)
 class _C {
@@ -9,7 +13,6 @@ class _C {
   static const ink = Color(0xFF1A2421);
   static const muted = Color(0xFF566A60);
   static const muted2 = Color(0xFF556F60);
-  static const body = Color(0xFF263B30);
   static const forest = Color(0xFF1E3A2B);
   static const accent = Color(0xFF3B6E51);
   static const border = Color(0xFFD1E2D6);
@@ -18,6 +21,7 @@ class _C {
   static const track = Color(0xFFEDF3EE);
   static const green = Color(0xFF10B981);
   static const avatar = Color(0xFF4D6453);
+  static const body = Color(0xFF263B30);
 }
 
 TextStyle _head(double size,
@@ -42,6 +46,105 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int? _mood;
 
+  final _journal = JournalService();
+  bool _savingMood = false;
+
+  JournalStats _stats = JournalStats([]);
+  bool _loadingStats = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStats();
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final entries = await _journal.listEntries();
+      if (mounted) setState(() => _stats = JournalStats(entries));
+    } on ApiException {
+      // Si falla, el Inicio se queda con lo que tenía; no es motivo para un error en pantalla.
+    } finally {
+      if (mounted) setState(() => _loadingStats = false);
+    }
+  }
+
+  // Claves que entiende el backend, en el mismo orden que los chips
+  static const _moodKeys = ['calma', 'esperanzado', 'cansado', 'ansioso', 'triste'];
+
+  bool get _limitReached => _stats.todayCount >= JournalStats.dailyLimit;
+
+  void _showLimit() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Llegaste al límite de 5 registros por hoy. Mañana puedes continuar.'),
+      ),
+    );
+  }
+
+  Future<void> _openDiary() async {
+    if (_limitReached) {
+      _showLimit();
+      return;
+    }
+
+    // Si ya registró hoy, avisamos y preguntamos antes de abrir otro.
+    final count = _stats.todayCount;
+    if (count >= 1) {
+      final goOn = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: _C.bg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Ya registraste hoy', style: _head(18)),
+          content: Text(
+            count == 1
+                ? 'Hoy ya escribiste un registro. ¿Quieres añadir otro?'
+                : 'Hoy ya llevas $count de ${JournalStats.dailyLimit} registros. ¿Quieres añadir otro?',
+            style: _body(14, c: _C.body, h: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('Ahora no', style: _body(14, w: FontWeight.w600)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: _C.forest),
+              child: Text('Sí, añadir otro',
+                  style: _body(14, w: FontWeight.w700, c: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (goOn != true || !mounted) return;
+    }
+
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => const DiaryScreen()),
+    );
+    if (saved == true) _loadStats();
+  }
+
+  Future<void> _quickSave(int i) async {
+    if (_savingMood) return;
+    setState(() {
+      _mood = i;
+      _savingMood = true;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _journal.createEntry(primaryEmotion: _moodKeys[i]);
+      messenger.showSnackBar(const SnackBar(content: Text('Emoción registrada')));
+      _loadStats();
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _mood = null);
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _savingMood = false);
+    }
+  }
+
   static const _moods = [
     ('🌿', 'En calma'),
     ('⚡', 'Con\nenergía'),
@@ -50,15 +153,28 @@ class _HomeScreenState extends State<HomeScreen> {
     ('🌧️', 'Sensible'),
   ];
 
-  static const _days = [
-    ('L', _Day.done),
-    ('M', _Day.done),
-    ('X', _Day.done),
-    ('J', _Day.done),
-    ('V', _Day.today),
-    ('S', _Day.pending),
-    ('D', _Day.pending),
-  ];
+  static const _weekdayShort = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  static const _weekdayLetter = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+
+  static const _emotionLabels = {
+    'calma': 'En calma',
+    'esperanzado': 'Esperanzado',
+    'cansado': 'Cansado',
+    'ansioso': 'Ansioso',
+    'triste': 'Sensible',
+    'agradecido': 'Agradecido',
+  };
+
+  String _when(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(d.year, d.month, d.day);
+    final hh = d.hour.toString().padLeft(2, '0');
+    final mm = d.minute.toString().padLeft(2, '0');
+    final diff = today.difference(day).inDays;
+    final label = diff == 0 ? 'hoy' : diff == 1 ? 'ayer' : '${d.day}/${d.month}';
+    return '$label $hh:$mm';
+  }
 
   void _soon() {
     ScaffoldMessenger.of(context)
@@ -112,26 +228,31 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: _C.bg,
       appBar: _header(),
       bottomNavigationBar: _bottomNav(),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _greeting(firstName),
-                const SizedBox(height: 16),
-                _quickMood(),
-                const SizedBox(height: 16),
-                _pulse(),
-                const SizedBox(height: 16),
-                _insight(),
-                const SizedBox(height: 16),
-                _route(),
-                const SizedBox(height: 16),
-                _pause(),
-              ],
+      body: RefreshIndicator(
+        color: _C.forest,
+        onRefresh: _loadStats,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _greeting(firstName),
+                  const SizedBox(height: 16),
+                  _quickMood(),
+                  const SizedBox(height: 16),
+                  _pulse(),
+                  const SizedBox(height: 16),
+                  _insight(),
+                  const SizedBox(height: 16),
+                  _route(),
+                  const SizedBox(height: 16),
+                  _pause(),
+                ],
+              ),
             ),
           ),
         ),
@@ -232,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _navItem(Icons.menu_book_outlined, 'Diario'),
+              _navItem(Icons.menu_book_outlined, 'Diario', onTap: _openDiary),
               _navItem(Icons.show_chart, 'Progreso'),
               _navItem(Icons.eco, 'Inicio', selected: true),
               _navItem(Icons.local_florist_outlined, 'Recursos'),
@@ -244,10 +365,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _navItem(IconData icon, String label, {bool selected = false}) {
+  Widget _navItem(IconData icon, String label,
+      {bool selected = false, VoidCallback? onTap}) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: selected ? null : _soon,
+      onTap: selected ? null : (onTap ?? _soon),
       child: SizedBox(
         width: 60,
         height: 48,
@@ -299,7 +421,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: const Color(0xFFE2EDE5),
                 borderRadius: BorderRadius.circular(99),
               ),
-              child: Text('Semana 14 · Consistente',
+              child: Text('${_stats.daysThisWeek} de 7 días esta semana',
                   style: _body(12, w: FontWeight.w600, c: const Color(0xFF2E5941))),
             ),
           ],
@@ -359,7 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: _soon,
+              onTap: _openDiary,
               child: SizedBox(
                 height: 50,
                 child: Row(
@@ -368,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     const Icon(Icons.add_circle_outline,
                         size: 16, color: Colors.white),
                     const SizedBox(width: 8),
-                    Text('+ Registro Completo & Diario',
+                    Text('Registro Completo & Diario',
                         style: _body(14, w: FontWeight.w700, c: Colors.white)),
                   ],
                 ),
@@ -385,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final (emoji, label) = _moods[i];
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _mood = i),
+        onTap: () => _quickSave(i),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           height: 76,
@@ -416,6 +538,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _pulse() {
+    final latest = _stats.latest;
+    final calm = _stats.lastCalm;
+    final energy = _stats.lastEnergy;
+    final stress = _stats.lastStress;
+    final sleep = _stats.lastSleep;
+
+    String calmCap(int v) =>
+        v >= 7 ? 'Alta estabilidad' : v >= 4 ? 'Ánimo variable' : 'Inquietud perceptible';
+    String energyCap(int v) =>
+        v >= 7 ? 'Plena vitalidad' : v >= 4 ? 'Energía moderada' : 'Fatiga baja';
+    String sleepCap(int h) => h < 5
+        ? 'Sueño insuficiente'
+        : h < 7
+            ? 'Sueño corto'
+            : h <= 9
+                ? 'Descanso reparador'
+                : 'Sueño extenso';
+
+    final stressColor = stress == null
+        ? _C.green
+        : stress <= 3
+            ? _C.green
+            : stress <= 6
+                ? const Color(0xFFF59E0B)
+                : const Color(0xFFDC2626);
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,9 +589,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Pulso de hoy', style: _head(16)),
-                          Text('Sincronizado vía Apple Health ·\n09:42',
-                              style: _body(11, h: 1.5)),
+                          Text('Tu pulso emocional', style: _head(16)),
+                          Text(
+                            latest == null
+                                ? (_loadingStats ? 'Cargando…' : 'Aún sin registros')
+                                : 'Último registro · ${_when(latest.createdAt)}',
+                            style: _body(11, h: 1.5),
+                          ),
                         ],
                       ),
                     ),
@@ -451,40 +603,43 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _C.chip,
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: _C.border.withValues(alpha: 0.6)),
+              if (stress != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _C.chip,
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: _C.border.withValues(alpha: 0.6)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration:
+                            BoxDecoration(color: stressColor, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 4),
+                      Text('Estrés\n$stress/10',
+                          style: _body(11, w: FontWeight.w700, c: _C.accent, h: 1.5)),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                          color: _C.green, shape: BoxShape.circle),
-                    ),
-                    const SizedBox(width: 4),
-                    Text('En rango\nóptimo',
-                        style: _body(11, w: FontWeight.w700, c: _C.accent, h: 1.5)),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 14),
           Row(
             children: [
-              _metric('Calma', Icons.spa_outlined, '8', '/10', 0.8, 'Alta estabilidad'),
+              _metric('Calma', Icons.spa_outlined, calm?.toString() ?? '–', '/10',
+                  (calm ?? 0) / 10, calm == null ? 'Sin datos' : calmCap(calm)),
               const SizedBox(width: 8),
-              _metric('Energía', Icons.wb_sunny_outlined, '7', '/10', 0.7,
-                  'Nivel óptimo'),
+              _metric('Energía', Icons.wb_sunny_outlined, energy?.toString() ?? '–',
+                  '/10', (energy ?? 0) / 10,
+                  energy == null ? 'Sin datos' : energyCap(energy)),
               const SizedBox(width: 8),
-              _metric('Descanso', Icons.nightlight_outlined, '7.5', 'h', 0.75,
-                  'Sueño profundo'),
+              _metric('Descanso', Icons.nightlight_outlined, sleep?.toString() ?? '–',
+                  'h', (sleep ?? 0) / 12, sleep == null ? 'Sin datos' : sleepCap(sleep)),
             ],
           ),
           const SizedBox(height: 14),
@@ -500,11 +655,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Icon(Icons.spa_outlined, size: 14, color: _C.accent),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text('Tono autonómico estable para iniciar tu jornada',
-                      style: _body(12, w: FontWeight.w500, c: _C.forest, h: 1.5)),
+                  child: Text(
+                    latest == null
+                        ? 'Registra cómo te sientes para ver tu pulso'
+                        : 'Tu último estado: ${_emotionLabels[latest.primaryEmotion] ?? latest.primaryEmotion}',
+                    style: _body(12, w: FontWeight.w500, c: _C.forest, h: 1.5),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.check_circle_outline, size: 13, color: _C.muted),
               ],
             ),
           ),
@@ -548,7 +705,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            _bar(progress,
+            _bar(progress.clamp(0.0, 1.0),
                 height: 6, fill: _C.accent, track: _C.border.withValues(alpha: 0.6)),
             const SizedBox(height: 8),
             Text(caption,
@@ -589,61 +746,34 @@ class _HomeScreenState extends State<HomeScreen> {
               border: Border(bottom: BorderSide(color: Color(0xFFE3EDE6))),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: _C.forest,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _C.forest,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.auto_awesome,
-                                size: 11, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text('Diagnóstico Preventivo IA',
-                                style: _body(11,
-                                    w: FontWeight.w700,
-                                    c: Colors.white,
-                                    ls: 0.275)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text('Certeza 94%',
-                            overflow: TextOverflow.ellipsis,
-                            style: _body(11, w: FontWeight.w600)),
-                      ),
+                      const Icon(Icons.insights, size: 11, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text('Observación de tu semana',
+                          style: _body(11,
+                              w: FontWeight.w700, c: Colors.white, ls: 0.275)),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.verified_outlined, size: 16, color: _C.accent),
               ],
             ),
           ),
           const SizedBox(height: 11),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: 'Tienes 4 registros consistentes esta semana.',
-                  style: _body(13.5, w: FontWeight.w700, c: _C.ink, h: 1.62),
-                ),
-                TextSpan(
-                  text:
-                      ' Tu sistema nervioso muestra mayor estabilidad biométrica al despertar.',
-                  style: _body(13.5, c: _C.body, h: 1.62),
-                ),
-              ],
-            ),
+          Text(
+            _loadingStats
+                ? 'Cargando tus registros…'
+                : (_stats.insight ??
+                    'Aún no tienes registros. Toca una emoción arriba para empezar.'),
+            style: _body(13.5, w: FontWeight.w600, c: _C.ink, h: 1.62),
           ),
           const SizedBox(height: 12),
           Container(
@@ -655,7 +785,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             child: Row(
               children: [
-                const _PhotoPlaceholder(size: 48, icon: Icons.emoji_food_beverage_outlined),
+                const _PhotoPlaceholder(
+                    size: 48, icon: Icons.emoji_food_beverage_outlined),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -682,7 +813,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: _soon,
+                    onTap: _openDiary,
                     child: const SizedBox(
                       width: 32,
                       height: 32,
@@ -699,6 +830,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _route() {
+    final week = _stats.week;
+    final done = _stats.daysThisWeek;
+    final todayDone = week.last.emotion != null;
+    final doneNames = [
+      for (final d in week)
+        if (d.emotion != null) _weekdayShort[d.day.weekday - 1],
+    ];
+    final streak = _stats.streak;
+
     return _Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,7 +851,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Ruta de Bienestar Semanal', style: _head(15)),
-                    Text('Meta: 5 de 7 días completados', style: _body(12, h: 1.5)),
+                    Text('$done de 7 días registrados', style: _body(12, h: 1.5)),
                   ],
                 ),
               ),
@@ -726,9 +866,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.bolt, size: 14, color: _C.accent),
+                    const Icon(Icons.local_fire_department_outlined,
+                        size: 14, color: _C.accent),
                     const SizedBox(width: 4),
-                    Text('340 pts',
+                    Text(streak == 1 ? '1 día de racha' : '$streak días de racha',
                         style: _body(12, w: FontWeight.w700, c: _C.ink)),
                   ],
                 ),
@@ -736,27 +877,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _bar(0.72, height: 10, fill: _C.forest, track: _C.track),
+          _bar(done / 7, height: 10, fill: _C.forest, track: _C.track),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Flexible(
-                child: Text('Lun · Mar · Mié · Jue (4/5)',
-                    overflow: TextOverflow.ellipsis,
-                    style: _body(11, w: FontWeight.w500)),
+                child: Text(
+                  doneNames.isEmpty
+                      ? 'Aún sin registros esta semana'
+                      : doneNames.join(' · '),
+                  overflow: TextOverflow.ellipsis,
+                  style: _body(11, w: FontWeight.w500),
+                ),
               ),
               const SizedBox(width: 8),
-              Text('+50 pts al registrar hoy',
+              Text(todayDone ? 'Hoy ya registraste' : 'Falta registrar hoy',
                   style: _body(11, w: FontWeight.w700, c: _C.ink)),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              for (var i = 0; i < _days.length; i++) ...[
+              for (var i = 0; i < week.length; i++) ...[
                 if (i > 0) const SizedBox(width: 6),
-                _dayTile(_days[i].$1, _days[i].$2),
+                _dayTile(
+                  _weekdayLetter[week[i].day.weekday - 1],
+                  week[i].emotion != null
+                      ? _Day.done
+                      : (i == week.length - 1 ? _Day.today : _Day.pending),
+                ),
               ],
             ],
           ),
