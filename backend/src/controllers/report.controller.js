@@ -26,7 +26,7 @@ async function createShare(req, res, next) {
 
 async function revokeShare(req, res, next) {
   try {
-    await reportService.revokeActive(req.user.id); // ← igual que arriba
+    await reportService.revokeActive(req.userId); // ← igual que arriba
     res.status(204).end();
   } catch (err) {
     next(err);
