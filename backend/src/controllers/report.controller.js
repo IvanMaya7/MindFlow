@@ -11,7 +11,7 @@ async function createShare(req, res, next) {
     const { periodDays } = shareSchema.parse(req.body ?? {});
     const tz = parseInt(req.query.tz, 10);
     const { token, expiresAt } = await reportService.createShare(
-      req.user.id, // ← igual que en journal.controller.js
+      req.userId, // ← igual que en journal.controller.js
       periodDays,
       Number.isNaN(tz) ? 0 : tz
     );
