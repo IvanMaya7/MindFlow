@@ -6,6 +6,7 @@ import '../data/auth_service.dart' show ApiException;
 import '../data/journal_service.dart';
 import '../data/journal_entry.dart';
 import 'diary_screen.dart';
+import 'resources_screen.dart';
 
 // Paleta de la pantalla de inicio (tomada del diseño en Figma)
 class _C {
@@ -124,6 +125,13 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const DiaryScreen()),
     );
     if (saved == true) _loadStats();
+  }
+
+  Future<void> _openResources() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ResourcesScreen()),
+    );
+    if (mounted) _loadStats();
   }
 
   Future<void> _quickSave(int i) async {
@@ -356,7 +364,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _navItem(Icons.menu_book_outlined, 'Diario', onTap: _openDiary),
               _navItem(Icons.show_chart, 'Progreso'),
               _navItem(Icons.eco, 'Inicio', selected: true),
-              _navItem(Icons.local_florist_outlined, 'Recursos'),
+              _navItem(Icons.local_florist_outlined, 'Recursos',
+                  onTap: _openResources),
               _navItem(Icons.volunteer_activism_outlined, 'Ayuda'),
             ],
           ),
