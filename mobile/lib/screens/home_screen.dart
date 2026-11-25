@@ -6,6 +6,7 @@ import '../data/auth_service.dart' show ApiException;
 import '../data/journal_service.dart';
 import '../data/journal_entry.dart';
 import 'diary_screen.dart';
+import 'progress_screen.dart';
 
 // Paleta de la pantalla de inicio (tomada del diseño en Figma)
 class _C {
@@ -124,6 +125,14 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(builder: (_) => const DiaryScreen()),
     );
     if (saved == true) _loadStats();
+  }
+
+  Future<void> _openProgress() async {
+    final r = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => ProgressScreen(entries: _stats.entries)),
+    );
+    // Si en Progreso tocó la pestaña Diario, aquí la abrimos
+    if (r == 'diary' && mounted) _openDiary();
   }
 
   Future<void> _quickSave(int i) async {
@@ -354,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _navItem(Icons.menu_book_outlined, 'Diario', onTap: _openDiary),
-              _navItem(Icons.show_chart, 'Progreso'),
+              _navItem(Icons.show_chart, 'Progreso', onTap: _openProgress),
               _navItem(Icons.eco, 'Inicio', selected: true),
               _navItem(Icons.local_florist_outlined, 'Recursos'),
               _navItem(Icons.volunteer_activism_outlined, 'Ayuda'),

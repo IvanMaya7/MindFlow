@@ -102,3 +102,17 @@ model PasswordReset {
   @@index([email])
   @@map("password_resets")
 }
+
+model ReportShare {
+  id          Int       @id @default(autoincrement())
+  userId      String    @map("user_id")
+  tokenHash   String    @unique @map("token_hash")
+  periodDays  Int       @map("period_days")
+  tzOffsetMin Int       @default(0) @map("tz_offset_min")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("report_shares")
+}
