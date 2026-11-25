@@ -1,6 +1,5 @@
 const crypto = require("crypto");
 const prisma = require("../lib/prisma");
-const AppError = require("../utils/AppError");
 
 const TTL_MIN = 15;
 const DAY_MS = 86400000;
