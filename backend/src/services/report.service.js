@@ -1,6 +1,6 @@
 const crypto = require("crypto");
-const prisma = require("../config/prisma"); // ← igual que en journal.service.js
-const AppError = require("../utils/AppError"); // ← igual que en auth.service.js
+const prisma = require("../lib/prisma");
+const AppError = require("../utils/AppError");
 
 const TTL_MIN = 15;
 const DAY_MS = 86400000;
