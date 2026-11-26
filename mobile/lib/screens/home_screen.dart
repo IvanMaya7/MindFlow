@@ -7,6 +7,8 @@ import '../data/journal_service.dart';
 import '../data/journal_entry.dart';
 import 'diary_screen.dart';
 import 'progress_screen.dart';
+import 'resources_screen.dart';
+import 'help_screen.dart';
 
 // Paleta de la pantalla de inicio (tomada del diseño en Figma)
 class _C {
@@ -131,8 +133,25 @@ class _HomeScreenState extends State<HomeScreen> {
     final r = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => ProgressScreen(entries: _stats.entries)),
     );
-    // Si en Progreso tocó la pestaña Diario, aquí la abrimos
+    // Si en Progreso tocó otra pestaña, aquí la abrimos
     if (r == 'diary' && mounted) _openDiary();
+    if (r == 'help' && mounted) _openHelp();
+  }
+
+  Future<void> _openHelp() async {
+    final r = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const HelpScreen()),
+    );
+    if (!mounted) return;
+    if (r == 'diary') _openDiary();
+    if (r == 'progress') _openProgress();
+  }
+
+  Future<void> _openResources() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ResourcesScreen()),
+    );
+    if (mounted) _loadStats();
   }
 
   Future<void> _quickSave(int i) async {
@@ -365,8 +384,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _navItem(Icons.menu_book_outlined, 'Diario', onTap: _openDiary),
               _navItem(Icons.show_chart, 'Progreso', onTap: _openProgress),
               _navItem(Icons.eco, 'Inicio', selected: true),
-              _navItem(Icons.local_florist_outlined, 'Recursos'),
-              _navItem(Icons.volunteer_activism_outlined, 'Ayuda'),
+              _navItem(Icons.local_florist_outlined, 'Recursos', onTap: _openResources),
+              _navItem(Icons.volunteer_activism_outlined, 'Ayuda', onTap: _openHelp),
             ],
           ),
         ),

@@ -6,6 +6,7 @@ const errorHandler = require('./middlewares/error.middleware');
 const journalRoutes = require("./routes/journal.routes");
 const reportRoutes = require("./routes/report.routes");
 const reportController = require("./controllers/report.controller");
+const contactsRoutes = require("./routes/contacts.routes")
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use("/api/journal", journalRoutes);
 app.use("/api/reports", reportRoutes);
 app.get("/r/:token", reportController.publicView);
+app.use("/api/contacts", contactsRoutes);
 
 app.use(errorHandler);
 

@@ -13,7 +13,7 @@ async function createShare(req, res, next) {
     const { token, expiresAt } = await reportService.createShare(
       req.userId, // ← igual que en journal.controller.js
       periodDays,
-      Number.isNaN(tz) ? 0 : tz
+      Number.isNaN(tz) ? 0 : tz,
     );
     res.status(201).json({
       url: `${process.env.PUBLIC_BASE_URL}/r/${token}`,
