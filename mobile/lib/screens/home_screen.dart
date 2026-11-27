@@ -9,6 +9,7 @@ import 'diary_screen.dart';
 import 'progress_screen.dart';
 import 'resources_screen.dart';
 import 'help_screen.dart';
+import 'profile_screen.dart';
 
 // Paleta de la pantalla de inicio (tomada del diseño en Figma)
 class _C {
@@ -133,11 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final r = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => ProgressScreen(entries: _stats.entries)),
     );
-    if (!mounted) return;
     // Si en Progreso tocó otra pestaña, aquí la abrimos
-    if (r == 'diary') _openDiary();
-    if (r == 'help') _openHelp();
-    if (r == 'resources') _openResources();
+    if (r == 'diary' && mounted) _openDiary();
+    if (r == 'help' && mounted) _openHelp();
   }
 
   Future<void> _openHelp() async {
@@ -147,17 +146,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (r == 'diary') _openDiary();
     if (r == 'progress') _openProgress();
-    if (r == 'resources') _openResources();
   }
 
   Future<void> _openResources() async {
-    final r = await Navigator.of(context).push<String>(
+    await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const ResourcesScreen()),
     );
-    if (!mounted) return;
-    if (r == 'progress') _openProgress();
-    if (r == 'help') _openHelp();
-    _loadStats();
+    if (mounted) _loadStats();
   }
 
   Future<void> _quickSave(int i) async {
@@ -215,42 +210,11 @@ class _HomeScreenState extends State<HomeScreen> {
         .showSnackBar(const SnackBar(content: Text('Próximamente')));
   }
 
-  void _openProfile() {
-    final user = context.read<AuthProvider>().user;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _C.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetCtx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(user?.displayName ?? '', style: _head(18)),
-              const SizedBox(height: 2),
-              Text(user?.email ?? '', style: _body(13)),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.logout, color: _C.forest),
-                title: Text('Cerrar sesión',
-                    style: _body(14, w: FontWeight.w600, c: _C.forest)),
-                onTap: () {
-                  Navigator.of(sheetCtx).pop();
-                  context.read<AuthProvider>().logout();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    void _openProfile() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProfileScreen()),
     );
   }
-
   // ---------------- Pantalla ----------------
 
   @override
