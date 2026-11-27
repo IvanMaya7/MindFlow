@@ -41,7 +41,6 @@ class JournalService {
       'textNotes': ?textNotes,
     };
 
-
     try {
       final res = await http
           .post(
