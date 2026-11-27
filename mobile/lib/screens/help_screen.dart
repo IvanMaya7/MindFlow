@@ -55,9 +55,8 @@ class HelpScreen extends StatefulWidget {
 }
 
 class _HelpScreenState extends State<HelpScreen> {
-  void _soon() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Próximamente')));
+  void _openResources() {
+    Navigator.of(context).pop('resources');
   }
 
   void _openContacts() {
@@ -162,7 +161,8 @@ class _HelpScreenState extends State<HelpScreen> {
                   onTap: () => Navigator.of(context).pop('progress')),
               _navItem(Icons.eco_outlined, 'Inicio',
                   onTap: () => Navigator.of(context).pop()),
-              _navItem(Icons.local_florist_outlined, 'Recursos', onTap: _soon),
+              _navItem(Icons.local_florist_outlined, 'Recursos',
+                  onTap: _openResources),
               _navItem(Icons.volunteer_activism_outlined, 'Ayuda', selected: true),
             ],
           ),

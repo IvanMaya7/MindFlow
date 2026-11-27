@@ -142,9 +142,12 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
   // ---------------- Acciones ----------------
 
-  void _soon() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Próximamente')));
+  void _openProgress() {
+    Navigator.of(context).pop('progress');
+  }
+
+  void _openHelp() {
+    Navigator.of(context).pop('help');
   }
 
   Future<void> _openDiary() async {
@@ -557,10 +560,10 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _navItem(Icons.menu_book_outlined, 'Diario', onTap: _openDiary),
-              _navItem(Icons.show_chart, 'Progreso', onTap: _soon),
+              _navItem(Icons.show_chart, 'Progreso', onTap: _openProgress),
               _navItem(Icons.eco, 'Inicio', onTap: _goHome),
               _navItem(Icons.local_florist_outlined, 'Recursos', selected: true),
-              _navItem(Icons.volunteer_activism_outlined, 'Ayuda', onTap: _soon),
+              _navItem(Icons.volunteer_activism_outlined, 'Ayuda', onTap: _openHelp),
             ],
           ),
         ),

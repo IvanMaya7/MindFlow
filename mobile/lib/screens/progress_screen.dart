@@ -65,9 +65,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
     });
   }
 
-  void _soon() {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Próximamente')));
+  void _openResources() {
+    Navigator.of(context).pop('resources');
+  }
+
+  void _openHelp() {
+    Navigator.of(context).pop('help');
   }
 
     bool _generating = false;
@@ -219,8 +222,10 @@ class _ProgressScreenState extends State<ProgressScreen> {
               _navItem(Icons.show_chart, 'Progreso', selected: true),
               _navItem(Icons.eco_outlined, 'Inicio',
                   onTap: () => Navigator.of(context).pop()),
-              _navItem(Icons.local_florist_outlined, 'Recursos', onTap: _soon),
-              _navItem(Icons.volunteer_activism_outlined, 'Ayuda', onTap: _soon),
+              _navItem(Icons.local_florist_outlined, 'Recursos',
+                  onTap: _openResources),
+              _navItem(Icons.volunteer_activism_outlined, 'Ayuda',
+                  onTap: _openHelp),
             ],
           ),
         ),

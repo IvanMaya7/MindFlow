@@ -133,9 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final r = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => ProgressScreen(entries: _stats.entries)),
     );
+    if (!mounted) return;
     // Si en Progreso tocó otra pestaña, aquí la abrimos
-    if (r == 'diary' && mounted) _openDiary();
-    if (r == 'help' && mounted) _openHelp();
+    if (r == 'diary') _openDiary();
+    if (r == 'help') _openHelp();
+    if (r == 'resources') _openResources();
   }
 
   Future<void> _openHelp() async {
@@ -145,13 +147,17 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
     if (r == 'diary') _openDiary();
     if (r == 'progress') _openProgress();
+    if (r == 'resources') _openResources();
   }
 
   Future<void> _openResources() async {
-    await Navigator.of(context).push(
+    final r = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const ResourcesScreen()),
     );
-    if (mounted) _loadStats();
+    if (!mounted) return;
+    if (r == 'progress') _openProgress();
+    if (r == 'help') _openHelp();
+    _loadStats();
   }
 
   Future<void> _quickSave(int i) async {
