@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../data/resource.dart';
 import '../data/resource_service.dart';
 import '../providers/auth_provider.dart';
 import 'diary_screen.dart';
 import 'resource_detail_screen.dart';
+import '../data/auth_service.dart' show ApiException;
+import '../data/journal_entry.dart';
+import '../data/journal_service.dart';
 
 // Paleta y tipografía tomadas de la pantalla de Inicio / Diario.
 class _R {
@@ -150,7 +152,62 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     Navigator.of(context).pop('help');
   }
 
+    void _showLimit() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Llegaste al límite de 5 registros por hoy. Mañana puedes continuar.'),
+      ),
+    );
+  }
+
   Future<void> _openDiary() async {
+    // Consultamos cuántos registros lleva hoy esta persona
+    var count = 0;
+    try {
+      final entries = await JournalService().listEntries();
+      count = JournalStats(entries).todayCount;
+    } on ApiException {
+      // Si falla la consulta, lo dejamos pasar; el servidor igual valida el límite de 5.
+    }
+    if (!mounted) return;
+
+    // Límite diario alcanzado: avisamos y no abrimos el diario
+    if (count >= JournalStats.dailyLimit) {
+      _showLimit();
+      return;
+    }
+
+    // Si ya registró hoy, avisamos y preguntamos antes de abrir otro
+    if (count >= 1) {
+      final goOn = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: _R.bg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('Ya registraste hoy', style: _head(18)),
+          content: Text(
+            count == 1
+                ? 'Hoy ya escribiste un registro. ¿Quieres añadir otro?'
+                : 'Hoy ya llevas $count de ${JournalStats.dailyLimit} registros. ¿Quieres añadir otro?',
+            style: _body(14, c: _R.body, h: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: Text('Ahora no', style: _body(14, w: FontWeight.w600)),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              style: FilledButton.styleFrom(backgroundColor: _R.forest),
+              child: Text('Sí, añadir otro',
+                  style: _body(14, w: FontWeight.w700, c: Colors.white)),
+            ),
+          ],
+        ),
+      );
+      if (goOn != true || !mounted) return;
+    }
+
     await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => const DiaryScreen()),
     );
